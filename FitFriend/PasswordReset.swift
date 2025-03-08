@@ -11,41 +11,79 @@ import FirebaseAuth
 struct PasswordReset: View {
     @State private var email: String = ""
     @State private var message: String = ""
+    @State private var messageColor: Color = .red
+    @State private var navigateToLogin = false
+    @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        VStack {
-            TextField("Enter your email", text: $email)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+        VStack(spacing: 20) {
+            Text("รีเซ็ตรหัสผ่าน")
+                .font(.largeTitle)
+                .bold()
+                .padding(.vertical)
+            
+            Text("กรุณากรอกอีเมลที่คุณใช้ลงทะเบียน เราจะส่งลิงก์รีเซ็ตรหัสผ่านไปให้คุณ")
+                .multilineTextAlignment(.center)
                 .padding()
+            
+            TextField("อีเมล", text: $email)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+                .keyboardType(.emailAddress)
+                .autocapitalization(.none)
 
             Button(action: {
                 sendPasswordReset(email: email)
             }) {
-                Text("Send Reset Link")
+                Text("ส่งลิงก์รีเซ็ตรหัสผ่าน")
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
-            .padding()
+            .padding(.horizontal)
 
             Text(message)
-                .foregroundColor(.red)
+                .foregroundColor(messageColor)
+                .multilineTextAlignment(.center)
+                .padding()
+            
+            Button("กลับไปหน้าเข้าสู่ระบบ") {
+                navigateToLogin = true
+            }
+            .padding()
+            
+            NavigationLink("", destination: Login(), isActive: $navigateToLogin)
+                .hidden()
         }
         .padding()
     }
 
     func sendPasswordReset(email: String) {
+        if email.isEmpty {
+            message = "กรุณากรอกอีเมล"
+            messageColor = .red
+            return
+        }
+        
         Auth.auth().sendPasswordReset(withEmail: email) { error in
             if let error = error {
-                message = "Error: \(error.localizedDescription)"
+                message = "เกิดข้อผิดพลาด: \(error.localizedDescription)"
+                messageColor = .red
             } else {
-                message = "Password reset link sent to your email."
+                message = "ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว"
+                messageColor = .green
+                
+                // หน่วงเวลาก่อนกลับไปหน้า Login
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    navigateToLogin = true
+                }
             }
         }
     }
 }
+
 #Preview {
     PasswordReset()
 }
